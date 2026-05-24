@@ -679,6 +679,14 @@ async function loadProfile() {
   const my = posts || [];
   document.getElementById('pm-posts').textContent = my.length;
   document.getElementById('prof-works').textContent = my.length;
+
+  // 팔로워/팔로잉 수 실제 DB에서 가져오기
+  const { count: followerCount } = await sb.from('follows').select('*', {count:'exact'}).eq('following_id', user.id);
+  const { count: followingCount } = await sb.from('follows').select('*', {count:'exact'}).eq('follower_id', user.id);
+  document.querySelectorAll('.pm-stat')[1].querySelector('.pm-n').textContent = followerCount || 0;
+  document.querySelectorAll('.pm-stat')[2].querySelector('.pm-n').textContent = followingCount || 0;
+  document.querySelectorAll('.prof-stats > div')[1].querySelector('.ps-n').textContent = followerCount || 0;
+  document.querySelectorAll('.prof-stats > div')[2].querySelector('.ps-n').textContent = followingCount || 0;
   const g = document.getElementById('port-grid');
   if (!my.length) {
     g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--g400)"><i class="ti ti-photo-off" style="font-size:40px;display:block;margin-bottom:8px"></i><p>아직 작업이 없어요!</p></div>';
@@ -922,8 +930,26 @@ async function sendDM() {
     await loadProfile_data();
     updateNav();
     goPage('feed', document.querySelector('.ntab'));
+  } else {
+    // 세션 없으면 로그인 페이지 유지
+    document.getElementById('page-auth').classList.add('active');
   }
 })();
+
+// 세션 변경 감지 (탭 전환, 토큰 갱신 등)
+window.addEventListener('focus', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session && user) {
+    user = null; profile = null;
+    updateNav();
+    goPage('auth');
+  } else if (session && !user) {
+    user = session.user;
+    await loadProfile_data();
+    updateNav();
+    goPage('feed', document.querySelector('.ntab'));
+  }
+});
 </script>
 </body>
 </html>
