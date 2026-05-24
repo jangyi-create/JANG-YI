@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion Cloud — 열정의 아카이브</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --red:#D72638;--red-h:#ff3347;--red-f:#fff0f1;
+  --w:#ffffff;--off:#f8f7f5;
+  --g100:#f2f1ef;--g200:#e4e3e0;--g300:#c8c7c3;
+  --g400:#9d9c98;--g500:#6b6a67;--g700:#2e2d2b;--g900:#111110;
+  --fd:'DM Serif Display',serif;--fb:'DM Sans',sans-serif;
+  --ease:all 0.2s cubic-bezier(.4,0,.2,1);
+}
+[data-theme=dark]{
+  --w:#111110;--off:#161614;--g100:#1c1c1a;--g200:#242422;
+  --g300:#333330;--g400:#555551;--g500:#888884;--g700:#c8c7c3;--g900:#f2f1ef;--red-f:#1e0a0c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--fb);background:var(--off);color:var(--g900);min-height:100vh;transition:background .3s,color .3s;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(215,38,56,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(215,38,56,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--g900);color:var(--w);padding:10px 22px;border-radius:99px;font-size:13px;font-weight:500;z-index:9999;transition:transform .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:var(--w);border-bottom:1px solid var(--g200);}
+.nav-logo{font-family:var(--fd);font-size:22px;color:var(--g900);letter-spacing:-.5px;cursor:pointer;}
+.nav-logo span{color:var(--red);}
+.nav-tabs{display:flex;gap:4px;}
+.ntab{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;border:none;background:transparent;transition:var(--ease);font-family:var(--fb);}
+.ntab:hover{background:var(--g100);color:var(--g900);}
+.ntab.active{background:var(--g900);color:var(--w);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--g200);background:var(--g100);color:var(--g500);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:var(--ease);}
+.icon-btn:hover{border-color:var(--red);color:var(--red);}
+.btn-red{display:flex;align-items:center;gap:6px;padding:8px 18px;background:var(--red);color:#fff;border:none;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:var(--ease);font-family:var(--fb);}
+.btn-red:hover{background:var(--red-h);}
+.btn-red:disabled{opacity:.5;cursor:not-allowed;}
+.av-nav{width:34px;height:34px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--g200);}
+
+/* PAGES */
+.page{display:none;padding-top:60px;min-height:100vh;position:relative;z-index:1;}
+.page.active{display:block;}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 16px;}
+.auth-card{background:var(--w);border:1px solid var(--g200);border-radius:24px;padding:40px;width:100%;max-width:420px;animation:fadeUp .4s ease;}
+.auth-logo{font-family:var(--fd);font-size:28px;color:var(--g900);text-align:center;margin-bottom:6px;}
+.auth-logo span{color:var(--red);}
+.auth-sub{text-align:center;font-size:14px;color:var(--g400);margin-bottom:32px;}
+.auth-tabs{display:flex;background:var(--g100);border-radius:12px;padding:4px;margin-bottom:24px;}
+.atab{flex:1;text-align:center;padding:8px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:var(--ease);color:var(--g400);}
+.atab.active{background:var(--w);color:var(--g900);}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g400);margin-bottom:6px;}
+.form-input{width:100%;border:1px solid var(--g200);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--g900);font-family:var(--fb);background:var(--w);outline:none;transition:var(--ease);}
+.form-input:focus{border-color:var(--red);}
+.btn-full{width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--fb);transition:var(--ease);margin-top:4px;}
+.btn-full:hover{background:var(--red-h);}
+.btn-full:disabled{opacity:.5;cursor:not-allowed;}
+.auth-div{text-align:center;font-size:12px;color:var(--g400);margin:20px 0;position:relative;}
+.auth-div::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--g200);}
+.auth-div span{background:var(--w);padding:0 12px;position:relative;}
+.btn-google{width:100%;padding:11px;border:1px solid var(--g200);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--fb);background:var(--w);color:var(--g700);display:flex;align-items:center;justify-content:center;gap:8px;transition:var(--ease);}
+.btn-google:hover{border-color:var(--g300);background:var(--g100);}
+
+/* FEED */
+.feed-layout{display:grid;grid-template-columns:240px 1fr 280px;gap:32px;max-width:1200px;margin:0 auto;padding:32px 24px;}
+.sidebar{display:flex;flex-direction:column;gap:20px;}
+.card{background:var(--w);border:1px solid var(--g200);border-radius:16px;padding:18px;}
+.box-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);margin-bottom:14px;}
+
+/* profile mini */
+.pm-cover{height:60px;background:repeating-linear-gradient(45deg,var(--g100) 0,var(--g100) 1px,transparent 1px,transparent 12px);border-radius:10px;margin-bottom:-20px;position:relative;}
+.pm-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(215,38,56,.06),transparent);border-radius:10px;}
+.pm-av{width:48px;height:48px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border:3px solid var(--w);margin:0 auto 10px;position:relative;}
+.pm-name{font-size:15px;font-weight:700;color:var(--g900);text-align:center;margin-bottom:2px;}
+.pm-handle{font-size:12px;color:var(--g400);text-align:center;margin-bottom:14px;}
+.pm-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--g200);padding-top:14px;}
+.pm-stat{text-align:center;}
+.pm-n{font-size:15px;font-weight:800;color:var(--red);}
+.pm-l{font-size:10px;color:var(--g400);margin-top:1px;}
+
+.trend-tag{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--g100);cursor:pointer;}
+.trend-tag:last-child{border-bottom:none;}
+.trend-tag:hover .tn{color:var(--red);}
+.tn{font-size:13px;font-weight:600;color:var(--g700);}
+.tc{font-size:11px;color:var(--g400);}
+
+/* stories */
+.stories{display:flex;gap:12px;overflow:hidden;background:var(--w);border:1px solid var(--g200);border-radius:16px;padding:16px;}
+.si{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;}
+.sr{width:52px;height:52px;border-radius:50%;padding:2.5px;background:linear-gradient(135deg,var(--red),#ff9a9e);transition:var(--ease);}
+.sr:hover{transform:scale(1.08);}
+.sin{width:100%;height:100%;border-radius:50%;background:var(--g200);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--g900);border:2.5px solid var(--w);}
+.sn{font-size:10px;color:var(--g500);max-width:52px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* post card */
+.post-card{background:var(--w);border:1px solid var(--g200);border-radius:20px;overflow:hidden;transition:var(--ease);animation:fadeUp .4s ease both;}
+.post-card:hover{border-color:var(--g300);transform:translateY(-2px);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.ph{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;}
+.pav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;background:var(--red);}
+.pa-name{font-size:14px;font-weight:700;color:var(--g900);}
+.pa-sub{font-size:11px;color:var(--g400);margin-top:1px;}
+.p-img{width:100%;aspect-ratio:16/9;background:var(--g100);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.p-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.ag-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(4,1fr);}
+.agc{border:.5px solid rgba(215,38,56,.07);}
+.agc.h{background:rgba(215,38,56,.04);}
+.img-lbl{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--g300);position:relative;z-index:1;}
+.img-tag{position:absolute;top:10px;right:10px;background:var(--red);color:#fff;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:1px;z-index:2;}
+.p-actions{display:flex;align-items:center;padding:12px 16px;gap:16px;border-top:1px solid var(--g100);}
+.act{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--g400);cursor:pointer;transition:var(--ease);border:none;background:transparent;font-family:var(--fb);}
+.act:hover{color:var(--g700);}
+.act.liked{color:var(--red);}
+.act i{font-size:17px;}
+.p-body{padding:0 16px 14px;}
+.p-cap{font-size:13px;color:var(--g700);line-height:1.6;margin-bottom:6px;}
+.p-cap strong{color:var(--g900);font-weight:700;}
+.p-tags span{font-size:12px;color:var(--red);margin-right:8px;cursor:pointer;}
+
+/* suggest */
+.si-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--g100);}
+.si-item:last-child{border-bottom:none;}
+.si-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.si-name{font-size:13px;font-weight:700;color:var(--g900);}
+.si-role{font-size:11px;color:var(--g400);}
+.fsm{border:1px solid var(--red);border-radius:999px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--red);cursor:pointer;background:transparent;transition:var(--ease);font-family:var(--fb);margin-left:auto;white-space:nowrap;}
+.fsm:hover,.fsm.on{background:var(--red);color:#fff;}
+
+.job-item{padding:10px 0;border-bottom:1px solid var(--g100);cursor:pointer;}
+.job-item:last-child{border-bottom:none;}
+.job-item:hover .job-t{color:var(--red);}
+.job-t{font-size:13px;font-weight:600;color:var(--g900);margin-bottom:3px;}
+.job-c{font-size:11px;color:var(--g400);}
+.job-tg{display:inline-block;background:var(--red-f);color:var(--red);border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:4px;}
+
+.feed-empty{text-align:center;padding:60px 20px;color:var(--g400);}
+.feed-empty i{font-size:48px;margin-bottom:12px;display:block;}
+
+/* EXPLORE */
+.exp-wrap{max-width:1100px;margin:0 auto;padding:32px 24px;}
+.exp-title{font-family:var(--fd);font-size:36px;color:var(--g900);margin-bottom:16px;}
+.exp-title em{color:var(--red);font-style:italic;}
+.search-bar{display:flex;align-items:center;gap:10px;background:var(--w);border:1px solid var(--g200);border-radius:14px;padding:12px 18px;max-width:520px;}
+.search-bar:focus-within{border-color:var(--red);}
+.search-bar i{font-size:18px;color:var(--g400);}
+.search-bar input{flex:1;border:none;background:transparent;font-size:14px;color:var(--g900);font-family:var(--fb);outline:none;}
+.search-bar input::placeholder{color:var(--g400);}
+.cat-pills{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 28px;}
+.cp{border-radius:999px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--g200);color:var(--g500);background:var(--w);transition:var(--ease);}
+.cp:hover{border-color:var(--red);color:var(--red);}
+.cp.active{background:var(--red);color:#fff;border-color:var(--red);}
+.masonry{columns:4;column-gap:14px;}
+.mi{break-inside:avoid;margin-bottom:14px;background:var(--w);border:1px solid var(--g200);border-radius:14px;overflow:hidden;cursor:pointer;transition:var(--ease);}
+.mi:hover{border-color:var(--red);transform:translateY(-3px);}
+.mi-img{width:100%;position:relative;overflow:hidden;background:var(--g100);display:flex;align-items:center;justify-content:center;}
+.mi-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.mi-arch{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);}
+.mac{border:.5px solid rgba(215,38,56,.07);}
+.mi-tag{position:absolute;top:8px;left:8px;background:var(--red);color:#fff;border-radius:5px;padding:2px 8px;font-size:9px;font-weight:700;letter-spacing:1px;}
+.mi-foot{padding:10px 12px;}
+.mi-user{font-size:12px;font-weight:700;color:var(--g900);}
+.mi-likes{font-size:11px;color:var(--red);margin-top:2px;}
+.mhs{height:120px;}.mhm{height:160px;}.mhl{height:210px;}
+
+/* PROFILE */
+.prof-wrap{max-width:900px;margin:0 auto;padding:0 24px 40px;}
+.prof-cover{height:200px;background:repeating-linear-gradient(0deg,rgba(215,38,56,.05) 0,rgba(215,38,56,.05) 1px,transparent 1px,transparent 48px),repeating-linear-gradient(90deg,rgba(215,38,56,.05) 0,rgba(215,38,56,.05) 1px,transparent 1px,transparent 48px),var(--g100);position:relative;}
+.prof-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(215,38,56,.08),transparent 60%);}
+.cover-lbl{position:absolute;bottom:16px;right:20px;font-size:10px;letter-spacing:4px;font-weight:700;text-transform:uppercase;color:var(--g300);z-index:1;}
+.prof-top{display:flex;align-items:flex-end;justify-content:space-between;padding:0 0 16px;margin-top:-28px;}
+.prof-av{width:72px;height:72px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;border:4px solid var(--off);}
+.btn-outline{border:1.5px solid var(--g200);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;background:transparent;font-family:var(--fb);transition:var(--ease);}
+.btn-outline:hover{border-color:var(--g400);color:var(--g700);}
+.prof-name{font-family:var(--fd);font-size:28px;color:var(--g900);margin-bottom:2px;}
+.prof-handle{font-size:14px;color:var(--g400);margin-bottom:10px;}
+.prof-bio{font-size:14px;color:var(--g700);line-height:1.6;margin-bottom:10px;}
+.avail-pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:600;background:var(--red-f);border:1px solid rgba(215,38,56,.2);color:var(--red);}
+.adot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+.prof-stats{display:flex;gap:32px;padding:20px 0;border-top:1px solid var(--g200);border-bottom:1px solid var(--g200);margin-bottom:24px;}
+.ps-n{font-size:22px;font-weight:800;color:var(--red);}
+.ps-l{font-size:12px;color:var(--g400);margin-top:1px;}
+.port-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.port-item{border-radius:12px;overflow:hidden;border:1px solid var(--g200);cursor:pointer;transition:var(--ease);background:var(--w);}
+.port-item:hover{border-color:var(--red);transform:translateY(-2px);}
+.port-img{width:100%;aspect-ratio:4/3;position:relative;overflow:hidden;background:var(--g100);display:flex;align-items:center;justify-content:center;}
+.port-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.port-arch{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);}
+.pac{border:.5px solid rgba(215,38,56,.07);}
+.port-otag{position:absolute;bottom:8px;left:8px;background:var(--red);color:#fff;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;z-index:2;}
+.port-foot{padding:10px 12px;}
+.port-title{font-size:13px;font-weight:700;color:var(--g900);margin-bottom:2px;}
+.port-likes{font-size:11px;color:var(--red);}
+
+/* UPLOAD MODAL */
+.overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--w);border-radius:24px;width:560px;max-width:calc(100vw - 32px);padding:28px;transform:translateY(16px);transition:transform .22s;max-height:88vh;overflow-y:auto;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.modal-title{font-family:var(--fd);font-size:22px;color:var(--g900);}
+.modal-close{width:32px;height:32px;border-radius:50%;border:1px solid var(--g200);background:var(--g100);color:var(--g500);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--ease);}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+
+.upload-zone{border:2px dashed var(--g200);border-radius:16px;min-height:140px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;cursor:pointer;transition:var(--ease);background:var(--g100);position:relative;overflow:hidden;margin-bottom:16px;}
+.upload-zone:hover{border-color:var(--red);background:var(--red-f);}
+.uz-arch{position:absolute;inset:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr);}
+.uza{border:.5px solid rgba(215,38,56,.07);}
+.uz-icon{font-size:32px;color:var(--red);position:relative;z-index:1;}
+.uz-hint{font-size:13px;color:var(--g400);position:relative;z-index:1;}
+.uz-hint2{font-size:11px;color:var(--g300);position:relative;z-index:1;}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;}
+
+.prev-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.prev-thumb{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;}
+.prev-thumb img{width:100%;height:100%;object-fit:cover;}
+.prev-rm{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;}
+
+.up-progress{background:var(--g100);border-radius:8px;height:6px;overflow:hidden;margin:12px 0;}
+.up-bar{height:100%;background:var(--red);border-radius:8px;width:0;transition:width .3s;}
+
+.modal-footer{display:flex;align-items:center;justify-content:space-between;margin-top:20px;gap:12px;flex-wrap:wrap;}
+.collab-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--g500);}
+.tog{width:36px;height:20px;border-radius:999px;background:var(--g200);position:relative;cursor:pointer;transition:var(--ease);}
+.tog.on{background:var(--red);}
+.tog-thumb{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:var(--ease);}
+.tog.on .tog-thumb{left:18px;}
+
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="goPage('feed')">fashion<span>.</span>cloud</div>
+  <div class="nav-tabs" id="main-nav" style="display:none">
+    <button class="ntab active" onclick="goPage('feed',this)">피드</button>
+    <button class="ntab" onclick="goPage('explore',this)">탐색</button>
+    <button class="ntab" onclick="goPage('profile',this)">프로필</button>
+  </div>
+  <div class="nav-right">
+    <button class="icon-btn" onclick="toggleTheme()"><i class="ti ti-moon" id="theme-icon"></i></button>
+    <button class="btn-red" id="btn-upload" style="display:none" onclick="openUpload()"><i class="ti ti-cloud-upload"></i> 아카이브</button>
+    <div class="av-nav" id="nav-av" style="display:none" onclick="goPage('profile')">?</div>
+    <button class="btn-red" id="btn-login" onclick="goPage('auth')"><i class="ti ti-login"></i> 로그인</button>
+  </div>
+</nav>
+
+<!-- AUTH -->
+<div class="page active" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">fashion<span>.</span>cloud</div>
+      <div class="auth-sub">열정을 아카이브하는 디자이너들의 공간</div>
+      <div class="auth-tabs">
+        <div class="atab active" onclick="switchAuth('login',this)">로그인</div>
+        <div class="atab" onclick="switchAuth('signup',this)">회원가입</div>
+      </div>
+      <div id="form-login">
+        <div class="form-group"><label class="form-label">이메일</label><input class="form-input" type="email" id="l-email" placeholder="email@example.com"></div>
+        <div class="form-group"><label class="form-label">비밀번호</label><input class="form-input" type="password" id="l-pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn-full" id="btn-login-go" onclick="doLogin()">로그인</button>
+        <div class="auth-div"><span>또는</span></div>
+        <button class="btn-google" onclick="doGoogle()"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Google로 계속하기</button>
+      </div>
+      <div id="form-signup" style="display:none">
+        <div class="form-group"><label class="form-label">이름</label><input class="form-input" type="text" id="s-name" placeholder="홍길동"></div>
+        <div class="form-group"><label class="form-label">이메일</label><input class="form-input" type="email" id="s-email" placeholder="email@example.com"></div>
+        <div class="form-group"><label class="form-label">비밀번호</label><input class="form-input" type="password" id="s-pw" placeholder="8자 이상" onkeydown="if(event.key==='Enter')doSignup()"></div>
+        <button class="btn-full" id="btn-signup-go" onclick="doSignup()">회원가입</button>
+        <div class="auth-div"><span>또는</span></div>
+        <button class="btn-google" onclick="doGoogle()"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Google로 계속하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEED -->
+<div class="page" id="page-feed">
+  <div class="feed-layout">
+    <aside class="sidebar">
+      <div class="card" style="text-align:center">
+        <div class="pm-cover"></div>
+        <div class="pm-av" id="pm-av">?</div>
+        <div class="pm-name" id="pm-name">—</div>
+        <div class="pm-handle" id="pm-handle">@—</div>
+        <div class="pm-stats">
+          <div class="pm-stat"><div class="pm-n" id="pm-posts">0</div><div class="pm-l">Works</div></div>
+          <div class="pm-stat"><div class="pm-n">0</div><div class="pm-l">Followers</div></div>
+          <div class="pm-stat"><div class="pm-n">0</div><div class="pm-l">Following</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="box-title">트렌딩 태그</div>
+        <div class="trend-tag"><span class="tn">#branding</span><span class="tc">4.2k</span></div>
+        <div class="trend-tag"><span class="tn">#typography</span><span class="tc">3.8k</span></div>
+        <div class="trend-tag"><span class="tn">#ui_ux</span><span class="tc">3.1k</span></div>
+        <div class="trend-tag"><span class="tn">#motion</span><span class="tc">2.7k</span></div>
+        <div class="trend-tag"><span class="tn">#identity</span><span class="tc">2.4k</span></div>
+      </div>
+    </aside>
+    <main style="display:flex;flex-direction:column;gap:20px;">
+      <div class="stories" id="stories-row">
+        <div class="si"><div class="sr"><div class="sin"><i class="ti ti-plus" style="font-size:18px"></i></div></div><div class="sn">내 스토리</div></div>
+      </div>
+      <div id="feed-posts"></div>
+    </main>
+    <aside class="sidebar">
+      <div class="card">
+        <div class="box-title">추천 디자이너</div>
+        <div class="si-item"><div class="si-av" style="background:#888">MS</div><div><div class="si-name">miso__</div><div class="si-role">Motion Designer</div></div><button class="fsm" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'Following':'Follow'">Follow</button></div>
+        <div class="si-item"><div class="si-av" style="background:#555">RX</div><div><div class="si-name">rux.co</div><div class="si-role">3D / Art Director</div></div><button class="fsm" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'Following':'Follow'">Follow</button></div>
+        <div class="si-item"><div class="si-av" style="background:#D72638">JL</div><div><div class="si-name">jlee__</div><div class="si-role">Brand Designer</div></div><button class="fsm" onclick="this.classList.toggle('on');this.textContent=this.classList.contains('on')?'Following':'Follow'">Follow</button></div>
+      </div>
+      <div class="card">
+        <div class="box-title">구인 · 협업</div>
+        <div class="job-item"><div class="job-t">Brand Identity Designer</div><div class="job-c">Studio BLANK · 서울</div><div class="job-tg">프리랜서</div></div>
+        <div class="job-item"><div class="job-t">UI/UX Lead</div><div class="job-c">Kakao · 판교</div><div class="job-tg">정규직</div></div>
+        <div class="job-item"><div class="job-t">Motion Graphics</div><div class="job-c">Nike Korea · 서울</div><div class="job-tg">계약직</div></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- EXPLORE -->
+<div class="page" id="page-explore">
+  <div class="exp-wrap">
+    <div class="exp-title">열정을 <em>탐색</em>하다</div>
+    <div class="search-bar"><i class="ti ti-search"></i><input type="text" placeholder="디자이너, 작업, 태그 검색..." oninput="filterExp(this.value)"></div>
+    <div class="cat-pills">
+      <div class="cp active" onclick="setCat(this,'')">All</div>
+      <div class="cp" onclick="setCat(this,'Branding')">Branding</div>
+      <div class="cp" onclick="setCat(this,'UI/UX')">UI/UX</div>
+      <div class="cp" onclick="setCat(this,'Typography')">Typography</div>
+      <div class="cp" onclick="setCat(this,'Motion')">Motion</div>
+      <div class="cp" onclick="setCat(this,'3D')">3D</div>
+    </div>
+    <div class="masonry" id="exp-grid"></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="prof-wrap">
+    <div class="prof-cover"><div class="cover-lbl">Portfolio Archive</div></div>
+    <div class="prof-top">
+      <div class="prof-av" id="prof-av">?</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-outline" onclick="doLogout()"><i class="ti ti-logout" style="font-size:14px"></i> 로그아웃</button>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="prof-name" id="prof-name">—</div>
+      <div class="prof-handle" id="prof-handle">@—</div>
+      <div class="prof-bio" id="prof-bio">아직 소개가 없어요.</div>
+      <div class="avail-pill" style="margin-top:10px"><div class="adot"></div> Available for freelance</div>
+    </div>
+    <div class="prof-stats">
+      <div><div class="ps-n" id="prof-works">0</div><div class="ps-l">Works</div></div>
+      <div><div class="ps-n">0</div><div class="ps-l">Followers</div></div>
+      <div><div class="ps-n">0</div><div class="ps-l">Following</div></div>
+    </div>
+    <div class="port-grid" id="port-grid"></div>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="overlay" id="upload-modal" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">새 아카이브</div>
+      <button class="modal-close" onclick="closeUpload()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="upload-zone" id="upload-zone">
+      <div class="uz-arch"><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div><div class="uza"></div></div>
+      <i class="ti ti-cloud-upload uz-icon"></i>
+      <div class="uz-hint">이미지를 드래그하거나 클릭해서 선택</div>
+      <div class="uz-hint2">JPG · PNG · GIF · 최대 10MB · 최대 10장</div>
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,image/webp" multiple onchange="handleFiles(this.files)">
+    </div>
+    <div class="prev-grid" id="prev-grid"></div>
+    <div class="form-group"><label class="form-label">제목</label><input class="form-input" type="text" id="up-title" placeholder="작업 제목을 입력하세요"></div>
+    <div class="form-group"><label class="form-label">카테고리</label>
+      <select class="form-input" id="up-cat">
+        <option>Branding</option><option>UI/UX</option><option>Typography</option>
+        <option>Motion</option><option>3D</option><option>Photography</option><option>Illustration</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">스토리</label><textarea class="form-input" id="up-desc" rows="3" placeholder="이 작업의 과정과 의도를 공유해요..."></textarea></div>
+    <div class="form-group"><label class="form-label">태그 (쉼표로 구분)</label><input class="form-input" type="text" id="up-tags" placeholder="#branding, #identity"></div>
+    <div class="up-progress" id="up-prog" style="display:none"><div class="up-bar" id="up-bar"></div></div>
+    <div class="modal-footer">
+      <div class="collab-row"><div class="tog" id="collab-tog" onclick="this.classList.toggle('on')"><div class="tog-thumb"></div></div> 협업 오픈</div>
+      <button class="btn-red" id="pub-btn" onclick="doUpload()"><i class="ti ti-cloud-upload"></i> 아카이브 올리기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SURL = 'https://axxklsqgyfbatgmaiaie.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4eGtsc3FneWZiYXRnbWFpYWllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1ODg4NzMsImV4cCI6MjA5NTE2NDg3M30.GKhvvwR8kuyZezInAQiHSeebbH2Gh_GgWqAY9OVvE6g';
+const sb = supabase.createClient(SURL, SKEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
+
+let user = null, profile = null, allPosts = [], curCat = '', uploadFiles = [];
+
+// TOAST
+function toast(msg, dur=3200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// THEME
+function toggleTheme() {
+  const d = document.body.getAttribute('data-theme') === 'dark';
+  document.body.setAttribute('data-theme', d ? '' : 'dark');
+  document.getElementById('theme-icon').className = d ? 'ti ti-moon' : 'ti ti-sun';
+}
+
+// PAGE
+function goPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) {
+    document.querySelectorAll('.ntab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  if (id === 'feed') loadFeed();
+  if (id === 'explore') loadExplore();
+  if (id === 'profile') loadProfile();
+}
+
+// NAV UI
+function updateNav() {
+  const in_ = !!user;
+  document.getElementById('main-nav').style.display = in_ ? 'flex' : 'none';
+  document.getElementById('btn-upload').style.display = in_ ? 'flex' : 'none';
+  document.getElementById('nav-av').style.display = in_ ? 'flex' : 'none';
+  document.getElementById('btn-login').style.display = in_ ? 'none' : 'flex';
+  if (in_ && profile) {
+    const init = (profile.full_name || profile.username || '?').slice(0,2).toUpperCase();
+    document.getElementById('nav-av').textContent = init;
+    document.getElementById('pm-av').textContent = init;
+    document.getElementById('pm-name').textContent = profile.full_name || profile.username || '디자이너';
+    document.getElementById('pm-handle').textContent = '@' + (profile.username || '');
+    document.getElementById('prof-av').textContent = init;
+    document.getElementById('prof-name').textContent = profile.full_name || profile.username || '디자이너';
+    document.getElementById('prof-handle').textContent = '@' + (profile.username || '');
+    if (profile.bio) document.getElementById('prof-bio').textContent = profile.bio;
+  }
+}
+
+async function loadProfile_data() {
+  if (!user) return;
+  const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  profile = data;
+  updateNav();
+}
+
+// AUTH STATE — 핵심: 세션 자동 복원
+sb.auth.onAuthStateChange(async (event, session) => {
+  user = session?.user || null;
+  if (user) {
+    await loadProfile_data();
+    updateNav();
+    if (document.getElementById('page-auth').classList.contains('active')) {
+      goPage('feed', document.querySelector('.ntab'));
+    }
+  } else {
+    profile = null;
+    updateNav();
+  }
+});
+
+// AUTH ACTIONS
+function switchAuth(mode, el) {
+  document.querySelectorAll('.atab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('form-login').style.display = mode === 'login' ? '' : 'none';
+  document.getElementById('form-signup').style.display = mode === 'signup' ? '' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pw = document.getElementById('l-pw').value;
+  if (!email || !pw) return toast('이메일과 비밀번호를 입력해주세요.');
+  const btn = document.getElementById('btn-login-go');
+  btn.disabled = true; btn.textContent = '로그인 중...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  btn.disabled = false; btn.textContent = '로그인';
+  if (error) return toast('❌ 이메일 또는 비밀번호가 틀렸어요.');
+  toast('✅ 로그인됐어요!');
+}
+
+async function doSignup() {
+  const name = document.getElementById('s-name').value.trim();
+  const email = document.getElementById('s-email').value.trim();
+  const pw = document.getElementById('s-pw').value;
+  if (!name || !email || !pw) return toast('모든 항목을 입력해주세요.');
+  if (pw.length < 8) return toast('비밀번호는 8자 이상이어야 해요.');
+  const btn = document.getElementById('btn-signup-go');
+  btn.disabled = true; btn.textContent = '가입 중...';
+  const { error } = await sb.auth.signUp({ email, password: pw, options: { data: { full_name: name } } });
+  btn.disabled = false; btn.textContent = '회원가입';
+  if (error) return toast('❌ ' + error.message);
+  toast('✅ 가입 완료! 이메일을 확인해 주세요.');
+}
+
+async function doGoogle() {
+  await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  user = null; profile = null;
+  updateNav();
+  goPage('auth');
+  toast('로그아웃됐어요.');
+}
+
+// FEED
+async function loadFeed() {
+  const c = document.getElementById('feed-posts');
+  c.innerHTML = '<div style="text-align:center;padding:48px;color:var(--g400)"><i class="ti ti-loader-2 spin" style="font-size:32px;display:block;margin-bottom:8px"></i>불러오는 중...</div>';
+  const { data, error } = await sb.from('posts').select('*, profiles(username, full_name)').order('created_at', { ascending: false }).limit(30);
+  if (error || !data?.length) {
+    c.innerHTML = '<div class="feed-empty"><i class="ti ti-photo-off"></i><p>아직 게시물이 없어요.<br>첫 번째 아카이브를 올려보세요!</p></div>';
+    return;
+  }
+  allPosts = data;
+  c.innerHTML = data.map((p, i) => renderPost(p, i)).join('');
+}
+
+function renderPost(p, i=0) {
+  const pr = p.profiles || {};
+  const name = pr.full_name || pr.username || '디자이너';
+  const init = name.slice(0,2).toUpperCase();
+  const firstImg = p.images?.[0];
+  const tags = (p.tags||[]).map(t => `<span>#${t.replace('#','')}</span>`).join('');
+  const ago = timeAgo(p.created_at);
+  const imgInner = firstImg
+    ? `<img src="${firstImg}" alt="${p.title}" loading="lazy">`
+    : `<div class="ag-grid">${'<div class="agc h"></div><div class="agc"></div>'.repeat(12)}</div><div class="img-lbl">${p.category||'DESIGN'}</div>`;
+  return `
+<div class="post-card" style="animation-delay:${i*0.06}s">
+  <div class="ph">
+    <div class="pav">${init}</div>
+    <div><div class="pa-name">${name}</div><div class="pa-sub">${p.category||'디자인'} · ${ago}</div></div>
+    <button class="act" style="margin-left:auto"><i class="ti ti-dots"></i></button>
+  </div>
+  <div class="p-img">${imgInner}<div class="img-tag">${(p.category||'').toUpperCase()}</div></div>
+  <div class="p-actions">
+    <button class="act" onclick="toggleLike(this,'${p.id}',${p.like_count||0})"><i class="ti ti-heart"></i> ${p.like_count||0}</button>
+    <button class="act"><i class="ti ti-message-circle"></i> 0</button>
+    <button class="act"><i class="ti ti-repeat"></i> 0</button>
+    <div style="flex:1"></div>
+    <button class="act"><i class="ti ti-bookmark"></i></button>
+  </div>
+  <div class="p-body">
+    <div class="p-cap"><strong>${name}</strong> ${p.description||p.title||''}</div>
+    <div class="p-tags">${tags}</div>
+  </div>
+</div>`;
+}
+
+async function toggleLike(btn, postId, cur) {
+  if (!user) return toast('로그인이 필요해요.');
+  btn.classList.toggle('liked');
+  const liked = btn.classList.contains('liked');
+  const next = liked ? cur+1 : Math.max(0,cur-1);
+  btn.innerHTML = `<i class="ti ti-heart"></i> ${next}`;
+  if (liked) {
+    await sb.from('likes').insert({ user_id: user.id, post_id: postId });
+    await sb.from('posts').update({ like_count: next }).eq('id', postId);
+  } else {
+    await sb.from('likes').delete().match({ user_id: user.id, post_id: postId });
+    await sb.from('posts').update({ like_count: next }).eq('id', postId);
+  }
+}
+
+// EXPLORE
+async function loadExplore() {
+  const { data } = await sb.from('posts').select('*, profiles(username)').order('like_count', { ascending: false }).limit(40);
+  allPosts = data || [];
+  renderExp(allPosts);
+}
+
+function renderExp(posts) {
+  const hs = ['mhs','mhm','mhl'];
+  const g = document.getElementById('exp-grid');
+  if (!posts?.length) { g.innerHTML = '<p style="color:var(--g400);font-size:14px">아직 작업이 없어요.</p>'; return; }
+  g.innerHTML = posts.map((p,i) => {
+    const h = hs[i%3];
+    const img = p.images?.[0]
+      ? `<img src="${p.images[0]}" alt="${p.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`
+      : `<div class="mi-arch">${'<div class="mac"></div>'.repeat(12)}</div>`;
+    return `<div class="mi" style="animation-delay:${i*0.04}s">
+      <div class="mi-img ${h}" style="position:relative">${img}<div class="mi-tag">${(p.category||'').toUpperCase()}</div></div>
+      <div class="mi-foot"><div class="mi-user">${p.profiles?.username||'디자이너'}</div><div class="mi-likes"><i class="ti ti-heart" style="font-size:11px"></i> ${p.like_count||0}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function setCat(el, cat) {
+  document.querySelectorAll('.cp').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  curCat = cat;
+  renderExp(cat ? allPosts.filter(p => p.category === cat) : allPosts);
+}
+
+function filterExp(q) {
+  renderExp(allPosts.filter(p =>
+    (!curCat || p.category === curCat) &&
+    (!q || p.title?.includes(q) || (p.tags||[]).some(t=>t.includes(q)))
+  ));
+}
+
+// PROFILE
+async function loadProfile() {
+  if (!user) return;
+  await loadProfile_data();
+  const { data: posts } = await sb.from('posts').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+  const my = posts || [];
+  document.getElementById('pm-posts').textContent = my.length;
+  document.getElementById('prof-works').textContent = my.length;
+  const g = document.getElementById('port-grid');
+  if (!my.length) {
+    g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--g400)"><i class="ti ti-photo-off" style="font-size:40px;display:block;margin-bottom:8px"></i><p>아직 작업이 없어요!</p></div>';
+    return;
+  }
+  g.innerHTML = my.map(p => {
+    const img = p.images?.[0] ? `<img src="${p.images[0]}" alt="${p.title}" loading="lazy">` : `<div class="port-arch">${'<div class="pac"></div>'.repeat(12)}</div>`;
+    return `<div class="port-item">
+      <div class="port-img">${img}<div class="port-otag">${(p.category||'').toUpperCase()}</div></div>
+      <div class="port-foot"><div class="port-title">${p.title}</div><div class="port-likes"><i class="ti ti-heart" style="font-size:11px"></i> ${p.like_count||0}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// UPLOAD
+function openUpload() {
+  if (!user) { goPage('auth'); return toast('로그인이 필요해요.'); }
+  document.getElementById('upload-modal').classList.add('open');
+}
+function closeUpload() {
+  document.getElementById('upload-modal').classList.remove('open');
+}
+function closeOv(e) { if (e.target.id === 'upload-modal') closeUpload(); }
+
+function handleFiles(files) {
+  uploadFiles = Array.from(files).slice(0,10);
+  const g = document.getElementById('prev-grid');
+  g.innerHTML = uploadFiles.map((f,i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="prev-thumb"><img src="${url}"><button class="prev-rm" onclick="rmFile(${i})"><i class="ti ti-x" style="font-size:10px"></i></button></div>`;
+  }).join('');
+}
+
+function rmFile(i) {
+  uploadFiles.splice(i,1);
+  const dt = new DataTransfer();
+  uploadFiles.forEach(f => dt.items.add(f));
+  document.getElementById('file-input').files = dt.files;
+  handleFiles(uploadFiles);
+}
+
+async function doUpload() {
+  if (!user) return toast('로그인이 필요해요.');
+  const title = document.getElementById('up-title').value.trim();
+  if (!title) return toast('제목을 입력해주세요.');
+  if (!uploadFiles.length) return toast('이미지를 선택해주세요.');
+
+  const btn = document.getElementById('pub-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2 spin"></i> 업로드 중...';
+  const prog = document.getElementById('up-prog');
+  const bar = document.getElementById('up-bar');
+  prog.style.display = '';
+
+  try {
+    const urls = [];
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const f = uploadFiles[i];
+      const ext = f.name.split('.').pop().toLowerCase();
+      const path = `${user.id}/${Date.now()}_${i}.${ext}`;
+
+      const { error: upErr } = await sb.storage.from('posts').upload(path, f, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: f.type
+      });
+      if (upErr) throw new Error('이미지 업로드 실패: ' + upErr.message);
+
+      const { data: urlData } = sb.storage.from('posts').getPublicUrl(path);
+      urls.push(urlData.publicUrl);
+      bar.style.width = `${((i+1)/uploadFiles.length)*100}%`;
+    }
+
+    const tags = document.getElementById('up-tags').value
+      .split(',').map(t => t.trim().replace(/^#/,'')).filter(Boolean);
+
+    const { error: postErr } = await sb.from('posts').insert({
+      user_id: user.id,
+      title,
+      description: document.getElementById('up-desc').value.trim(),
+      category: document.getElementById('up-cat').value,
+      tags,
+      images: urls,
+      is_collab: document.getElementById('collab-tog').classList.contains('on'),
+    });
+    if (postErr) throw new Error('게시물 저장 실패: ' + postErr.message);
+
+    toast('✅ 아카이브가 올라갔어요!');
+    closeUpload();
+    resetForm();
+    goPage('feed', document.querySelector('.ntab'));
+  } catch(e) {
+    toast('❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-cloud-upload"></i> 아카이브 올리기';
+    prog.style.display = 'none';
+    bar.style.width = '0';
+  }
+}
+
+function resetForm() {
+  uploadFiles = [];
+  document.getElementById('prev-grid').innerHTML = '';
+  document.getElementById('up-title').value = '';
+  document.getElementById('up-desc').value = '';
+  document.getElementById('up-tags').value = '';
+  document.getElementById('file-input').value = '';
+}
+
+function timeAgo(ts) {
+  const d = Math.floor((Date.now() - new Date(ts))/1000);
+  if (d < 60) return '방금 전';
+  if (d < 3600) return Math.floor(d/60) + '분 전';
+  if (d < 86400) return Math.floor(d/3600) + '시간 전';
+  return Math.floor(d/86400) + '일 전';
+}
+
+// 초기화 — 저장된 세션 자동 복원
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    user = session.user;
+    await loadProfile_data();
+    updateNav();
+    goPage('feed', document.querySelector('.ntab'));
+  }
+})();
+</script>
+</body>
+</html>
